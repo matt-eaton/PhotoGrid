@@ -9,31 +9,42 @@ import {
   Platform,
   StyleSheet,
   Text,
-  View
+  View,
+  ScrollView,
+  SafeAreaView,
+  Image
 } from 'react-native';
-
-const instructions = Platform.select({
-  ios: 'Press Cmd+R to reload,\n' +
-    'Cmd+D or shake for dev menu',
-  android: 'Double tap R on your keyboard to reload,\n' +
-    'Shake or press menu button for dev menu',
-});
+import images from './images';
 
 type Props = {};
 export default class App extends Component<Props> {
+  constructor() {
+    super();
+  }
+
+  renderGridContent() {
+    return images.map((image, index) => {
+      return (
+        <Image
+          resizeMode="cover"
+          source={image}
+          style={styles.gridImage}
+          key={`img_${image}_${index}`}
+        />
+      );
+    });
+  }
+
   render() {
     return (
-      <View style={styles.container}>
-        <Text style={styles.welcome}>
-          Welcome to React Native!
-        </Text>
-        <Text style={styles.instructions}>
-          To get started, edit App.js
-        </Text>
-        <Text style={styles.instructions}>
-          {instructions}
-        </Text>
-      </View>
+      <SafeAreaView style={styles.container}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollViewContent}
+        >
+          {this.renderGridContent()}
+        </ScrollView>
+      </SafeAreaView>
     );
   }
 }
@@ -41,18 +52,18 @@ export default class App extends Component<Props> {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F5FCFF',
+    backgroundColor: '#F5FCFF'
   },
-  welcome: {
-    fontSize: 20,
-    textAlign: 'center',
-    margin: 10,
+  scrollView: {
+    backgroundColor: '#000'
   },
-  instructions: {
-    textAlign: 'center',
-    color: '#333333',
-    marginBottom: 5,
+  scrollViewContent: {
+    flexDirection: 'row',
+    flexWrap: 'wrap'
   },
+  gridImage: {
+    width: '32.8%',
+    height: 120,
+    margin: 1
+  }
 });
