@@ -1,0 +1,3 @@
+rootProject.name = 'PhotoGrid'
+
+include ':app'
