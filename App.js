@@ -278,7 +278,14 @@ const styles = StyleSheet.create({
   },
   closeText: {
     position: 'absolute',
-    top: 40,
+    ...Platform.select({
+      ios: {
+        top: 40
+      },
+      android: {
+        top: 20
+      }
+    }),
     left: 20,
     color: '#fff',
     fontSize: 18
