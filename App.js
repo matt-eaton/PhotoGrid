@@ -19,7 +19,9 @@ import {
 } from 'react-native';
 import images from './images';
 
-type Props = {};
+type Props = {
+  animationStyle: 'expandCover' | 'slideUp'
+};
 
 type State = {
   activeImage: ?string,
@@ -42,6 +44,10 @@ const Screen = {
 };
 
 export default class App extends Component<Props, State> {
+  static defaultProps = {
+    animationStyle: 'expandCover'
+  };
+
   state = {
     activeImage: null,
     selectedIndex: null,
@@ -54,9 +60,95 @@ export default class App extends Component<Props, State> {
     super();
   }
 
-  imageKey = (img, index) => `img_${img}_${index}`;
+  imageKey = (img: string, index: number) => `img_${img}_${index}`;
 
-  handleImageSelected = selectedIndex => e => {
+  expandCoverTextStyle = ({
+    width,
+    pageX,
+    pageY
+  }: {
+    width: number,
+    pageX: number,
+    pageY: number
+  }) => {
+    const { imageAnimation } = this.state;
+
+    const left = imageAnimation.interpolate({
+      inputRange: [0, 1],
+      outputRange: [pageX, 0]
+    });
+
+    const top = imageAnimation.interpolate({
+      inputRange: [0, 1],
+      outputRange: [pageY + 120, 250]
+    });
+
+    const widthValue = imageAnimation.interpolate({
+      inputRange: [0, 1],
+      outputRange: [width, Screen.width]
+    });
+
+    const bottom = imageAnimation.interpolate({
+      inputRange: [0, 1],
+      outputRange: [Screen.height - pageY, 0]
+    });
+
+    return {
+      left,
+      top,
+      width: widthValue,
+      bottom
+    };
+  };
+
+  slideUpTextStyle = ({
+    width,
+    height,
+    pageX,
+    pageY
+  }: {
+    width: number,
+    height: number,
+    pageX: number,
+    pageY: number
+  }) => {
+    const { imageAnimation } = this.state;
+
+    const left = imageAnimation.interpolate({
+      inputRange: [0, 1],
+      outputRange: [pageX, 0]
+    });
+
+    const top = imageAnimation.interpolate({
+      inputRange: [0, 1],
+      outputRange: [Screen.height, 250]
+    });
+
+    const widthValue = imageAnimation.interpolate({
+      inputRange: [0, 1],
+      outputRange: [width, Screen.width]
+    });
+
+    const bottom = imageAnimation.interpolate({
+      inputRange: [0, 1],
+      outputRange: [Screen.height - pageY, 0]
+    });
+
+    const opacity = imageAnimation.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, 1]
+    });
+
+    return {
+      top,
+      left,
+      bottom,
+      width: widthValue,
+      opacity
+    };
+  };
+
+  handleImageSelected = (selectedIndex: number) => (e: any) => {
     const image = images[selectedIndex];
     const imageRef = this.refs[this.imageKey(image, selectedIndex)];
     imageRef.measure((x, y, width, height, pageX, pageY) => {
@@ -74,13 +166,12 @@ export default class App extends Component<Props, State> {
           }
         },
         () => {
-          Animated.timing(this.state.imageAnimation, {
-            toValue: 1,
-            duration: 400
+          Animated.spring(this.state.imageAnimation, {
+            toValue: 1
           }).start(() => {
             Animated.timing(this.state.closeButtonAnimation, {
               toValue: 1,
-              duration: 300
+              duration: 200
             }).start();
           });
         }
@@ -89,8 +180,10 @@ export default class App extends Component<Props, State> {
   };
 
   handleCloseButton = () => {
-    this.state.closeButtonAnimation.setValue(0);
-    Animated.timing(this.state.imageAnimation, {
+    const { closeButtonAnimation, imageAnimation } = this.state;
+
+    closeButtonAnimation.setValue(0);
+    Animated.timing(imageAnimation, {
       toValue: 0,
       duration: 450
     }).start(() => {
@@ -103,11 +196,13 @@ export default class App extends Component<Props, State> {
   };
 
   renderCloseButton = () => {
-    if (!this.state.activeImage) {
+    const { closeButtonAnimation, activeImage } = this.state;
+
+    if (!activeImage) {
       return null;
     }
 
-    const opacity = this.state.closeButtonAnimation.interpolate({
+    const opacity = closeButtonAnimation.interpolate({
       inputRange: [0, 1],
       outputRange: [0, 1]
     });
@@ -122,28 +217,40 @@ export default class App extends Component<Props, State> {
   };
 
   renderSelectedImage = () => {
-    if (!this.state.activeImage) {
+    const { activeImage, activeImagePosition, imageAnimation } = this.state;
+
+    if (!activeImagePosition) {
       return null;
     }
 
-    const { width, height, pageX, pageY } = this.state.activeImagePosition;
+    const {
+      width,
+      height,
+      pageX,
+      pageY
+    }: {
+      width: number,
+      height: number,
+      pageX: number,
+      pageY: number
+    } = activeImagePosition;
 
-    const topValue = this.state.imageAnimation.interpolate({
+    const topValue = imageAnimation.interpolate({
       inputRange: [0, 1],
       outputRange: [pageY, 0]
     });
 
-    const leftValue = this.state.imageAnimation.interpolate({
+    const leftValue = imageAnimation.interpolate({
       inputRange: [0, 1],
       outputRange: [pageX, 0]
     });
 
-    const widthValue = this.state.imageAnimation.interpolate({
+    const widthValue = imageAnimation.interpolate({
       inputRange: [0, 1],
       outputRange: [width, Screen.width]
     });
 
-    const heightValue = this.state.imageAnimation.interpolate({
+    const heightValue = imageAnimation.interpolate({
       inputRange: [0, 1],
       outputRange: [height, 250]
     });
@@ -161,7 +268,7 @@ export default class App extends Component<Props, State> {
       >
         <Animated.Image
           resizeMode="cover"
-          source={this.state.activeImage}
+          source={activeImage}
           style={{ width: widthValue, height: heightValue }}
         />
       </Animated.View>
@@ -169,33 +276,21 @@ export default class App extends Component<Props, State> {
   };
 
   renderImageText = () => {
-    if (!this.state.activeImage) {
+    const { activeImagePosition, imageAnimation } = this.state;
+    const { animationStyle } = this.props;
+
+    if (!activeImagePosition) {
       return null;
     }
 
-    const { width, height, pageX, pageY } = this.state.activeImagePosition;
+    let animStyle = {};
+    if (animationStyle === 'expandCover') {
+      animStyle = this.expandCoverTextStyle(activeImagePosition);
+    } else if (animationStyle === 'slideUp') {
+      animStyle = this.slideUpTextStyle(activeImagePosition);
+    }
 
-    const textLeftValue = this.state.imageAnimation.interpolate({
-      inputRange: [0, 1],
-      outputRange: [pageX, 0]
-    });
-
-    const textTopValue = this.state.imageAnimation.interpolate({
-      inputRange: [0, 1],
-      outputRange: [pageY + 120, 250]
-    });
-
-    const textWidthValue = this.state.imageAnimation.interpolate({
-      inputRange: [0, 1],
-      outputRange: [width, Screen.width]
-    });
-
-    const textBottomValue = this.state.imageAnimation.interpolate({
-      inputRange: [0, 1],
-      outputRange: [Screen.height - pageY, 0]
-    });
-
-    const opacity = this.state.imageAnimation.interpolate({
+    const opacity = imageAnimation.interpolate({
       inputRange: [0, 1],
       outputRange: [0, 1]
     });
@@ -204,11 +299,8 @@ export default class App extends Component<Props, State> {
       <Animated.View
         style={{
           position: 'absolute',
-          left: textLeftValue,
-          top: textTopValue,
-          width: textWidthValue,
-          bottom: textBottomValue,
-          backgroundColor: '#fff'
+          backgroundColor: '#fff',
+          ...animStyle
         }}
       >
         <Animated.Text style={[styles.imageText, { opacity }]}>
