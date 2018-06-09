@@ -166,8 +166,9 @@ export default class App extends Component<Props, State> {
           }
         },
         () => {
-          Animated.spring(this.state.imageAnimation, {
-            toValue: 1
+          Animated.timing(this.state.imageAnimation, {
+            toValue: 1,
+            duration: 350
           }).start(() => {
             Animated.timing(this.state.closeButtonAnimation, {
               toValue: 1,
